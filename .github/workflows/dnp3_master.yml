@@ -158,18 +158,26 @@ jobs:
 
           exit "$rc"
 
-      - name: Print final fuzzer_stats
+      - name: Print final fuzzer_stats for all workers
         if: always()
         shell: bash
         run: |
           cd fuzz_git
-          echo "===== final fuzzer_stats (master) ====="
-          if [ -f outputs/out_m0/fuzzer_stats ]; then
-            cat outputs/out_m0/fuzzer_stats
-          else
-            echo "outputs/out_m0/fuzzer_stats not found"
+          echo "===== final fuzzer_stats for all workers ====="
+          found=0
+          shopt -s nullglob
+          for stats in outputs/out_*/fuzzer_stats; do
+            found=1
+            worker_dir="$(dirname "$stats")"
+            worker_name="$(basename "$worker_dir")"
+            echo "===== ${worker_name} ====="
+            cat "$stats"
+            echo
+          done
+          if [ "$found" -eq 0 ]; then
+            echo "No outputs/out_*/fuzzer_stats found"
           fi
-
+      
       - name: Alert by email when crashes found
         continue-on-error: true
         if: always()
@@ -184,64 +192,80 @@ jobs:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
         run: |
           cd fuzz_git
-
-          if [ ! -f outputs/out_m0/fuzzer_stats ]; then
-            echo "outputs/out_m0/fuzzer_stats not found, skip email alert"
+          shopt -s nullglob
+          total_unique_crashes=0
+          total_crashes=0
+          found_stats=0
+          summary_file="$(mktemp)"
+          for stats in outputs/out_*/fuzzer_stats; do
+            found_stats=1
+            worker_dir="$(dirname "$stats")"
+            worker_name="$(basename "$worker_dir")"
+            unique_crashes="$(awk -F': *' '$1=="unique_crashes"{print $2}' "$stats" | tail -n1)"
+            worker_total_crashes="$(awk -F': *' '$1=="total_crashes"{print $2}' "$stats" | tail -n1)"
+            unique_crashes="${unique_crashes:-0}"
+            worker_total_crashes="${worker_total_crashes:-0}"
+            total_unique_crashes=$((total_unique_crashes + unique_crashes))
+            total_crashes=$((total_crashes + worker_total_crashes))
+            {
+              echo "${worker_name}:"
+              echo "  unique_crashes=${unique_crashes}"
+              echo "  total_crashes=${worker_total_crashes}"
+            } >> "$summary_file"
+            crash_dir="${worker_dir}/crashes"
+            if [ -d "$crash_dir" ]; then
+              crash_files_count="$(find "$crash_dir" -maxdepth 1 -type f ! -name 'README.txt' | wc -l)"
+              echo "  crash_files=${crash_files_count}" >> "$summary_file"
+            else
+              echo "  crash_files=0" >> "$summary_file"
+            fi
+            echo >> "$summary_file"
+          done
+          if [ "$found_stats" -eq 0 ]; then
+            echo "No outputs/out_*/fuzzer_stats found, skip email alert"
             exit 0
           fi
-
-          unique_crashes="$(awk -F': *' '$1=="unique_crashes"{print $2}' outputs/out_m0/fuzzer_stats | tail -n1)"
-          total_crashes="$(awk -F': *' '$1=="total_crashes"{print $2}' outputs/out_m0/fuzzer_stats | tail -n1)"
-
-          unique_crashes="${unique_crashes:-0}"
-          total_crashes="${total_crashes:-0}"
-
-          echo "unique_crashes=${unique_crashes}"
-          echo "total_crashes=${total_crashes}"
-
-          if [ "$unique_crashes" -eq 0 ] && [ "$total_crashes" -eq 0 ]; then
-            echo "No crashes found, no email sent"
+          echo "Aggregated unique_crashes=${total_unique_crashes}"
+          echo "Aggregated total_crashes=${total_crashes}"
+          if [ "$total_unique_crashes" -eq 0 ] && [ "$total_crashes" -eq 0 ]; then
+            echo "No crashes found across all workers, no email sent"
             exit 0
           fi
-
-          export UNIQUE_CRASHES="$unique_crashes"
+          export TOTAL_UNIQUE_CRASHES="$total_unique_crashes"
           export TOTAL_CRASHES="$total_crashes"
-
+          export WORKER_SUMMARY_FILE="$summary_file"
           python3 - <<'PY'
           import os
           import smtplib
           from email.mime.text import MIMEText
-
           workflow = os.environ["WORKFLOW_NAME"]
           run_no = os.environ["RUN_NO"]
-          unique_crashes = os.environ["UNIQUE_CRASHES"]
+          total_unique_crashes = os.environ["TOTAL_UNIQUE_CRASHES"]
           total_crashes = os.environ["TOTAL_CRASHES"]
-
           smtp_host = os.environ["SMTP_HOST"]
           smtp_port = int(os.environ["SMTP_PORT"])
           smtp_user = os.environ["SMTP_USER"]
           smtp_pass = os.environ["SMTP_PASS"]
           alert_email = os.environ["ALERT_EMAIL"]
-
+          with open(os.environ["WORKER_SUMMARY_FILE"], "r", encoding="utf-8") as f:
+              worker_summary = f.read()
           subject = f"[AFL Alert] {workflow} #{run_no} detected crashes"
           body = f"""AFL crash detected.
-
           Workflow: {workflow}
           Sequence: #{run_no}
-          unique_crashes: {unique_crashes}
-          total_crashes: {total_crashes}
+          aggregated_unique_crashes: {total_unique_crashes}
+          aggregated_total_crashes: {total_crashes}
+          Per-worker summary:
+          {worker_summary}
           """
-
           msg = MIMEText(body, _charset="utf-8")
           msg["Subject"] = subject
           msg["From"] = smtp_user
           msg["To"] = alert_email
-
           with smtplib.SMTP(smtp_host, smtp_port) as server:
               server.starttls()
               server.login(smtp_user, smtp_pass)
               server.sendmail(smtp_user, [alert_email], msg.as_string())
-
           print("Crash alert email sent")
           PY
 
