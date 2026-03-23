@@ -261,7 +261,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dnp3-log-seg-${{ inputs.run_segment }}
-          path: dnp3/logs/
+          path: fuzz_git/logs/
           if-no-files-found: warn
 
       - name: Upload fuzzing results archive
@@ -269,7 +269,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dnp3-findings-seg-${{ inputs.run_segment }}
-          path: dnp3/dnp3-findings.tar.gz
+          path: fuzz_git/dnp3-findings.tar.gz
           if-no-files-found: warn
 
       - name: Trigger next fuzzing segment
@@ -286,7 +286,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dnp3_fuzzing.yml/dispatches" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dnp3_decoder.yml/dispatches" \
             -d @- <<EOF
           {
             "ref": "dev",
