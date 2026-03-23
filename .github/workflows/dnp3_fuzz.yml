@@ -1,0 +1,267 @@
+name: DNP3 Fuzzing
+run-name: DNP3 fuzzing [${{ inputs.run_segment }}/${{ inputs.max_segments }}] on ${{ inputs.target_branch }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Branch to fuzz'
+        required: true
+        default: 'main'
+        type: string
+      run_segment:
+        description: 'Current fuzzing segment number'
+        required: true
+        default: '1'
+        type: string
+      max_segments:
+        description: 'Maximum number of chained fuzzing segments'
+        required: true
+        default: '8'
+        type: string
+      resume_run_id:
+        description: 'Previous workflow run ID used for AFL resume'
+        required: false
+        default: ''
+        type: string
+      resume_artifact_name:
+        description: 'Artifact name that contains previous AFL outputs'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  fuzzing:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_branch }}
+
+      - name: Install AFL++ runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3 \
+            libstdc++6 \
+            libgcc-s1
+
+      - name: Check AFL++ and target runtime libraries
+        shell: bash
+        run: |
+          chmod +x ./afl-fuzz
+          echo "==== ldd ./afl-fuzz ===="
+          ldd ../afl-fuzz || true
+          echo "==== ldd fuzz_git/afl_dnp3_outstation ===="
+          ldd fuzz_git/afl_dnp3_outstation || true
+
+      - name: Restore AFL++ state from previous segment
+        if: ${{ inputs.resume_run_id != '' && inputs.resume_artifact_name != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          cd fuzz_git
+          rm -rf outputs
+          mkdir -p /tmp/afl-resume
+          gh run download "${{ inputs.resume_run_id }}" \
+            -n "${{ inputs.resume_artifact_name }}" \
+            -D /tmp/afl-resume
+          tar -xzf /tmp/afl-resume/dnp3-findings.tar.gz
+          test -d outputs/out_m0/queue
+          echo "Resumed AFL++ output from run ${{ inputs.resume_run_id }} / artifact ${{ inputs.resume_artifact_name }}"
+
+      - name: Prepare runner for crash detection
+        shell: bash
+        run: |
+          echo "Before: $(cat /proc/sys/kernel/core_pattern)"
+          sudo sysctl -w kernel.core_pattern=core
+          echo "After:  $(cat /proc/sys/kernel/core_pattern)"
+
+      - name: Run AFL++ fuzzing for limited time
+        shell: bash
+        run: |
+          cd fuzz_git
+          mkdir -p logs
+          chmod +x ./afl_dnp3_outstation
+          chmod +x ../afl-fuzz
+          export AFL_NO_UI=1
+
+          set +e
+          timeout 21300 env \
+            AFL_AUTORESUME=1 \
+            AFL_IMPORT_FIRST=1 \
+            AFL_TESTCACHE_SIZE=200 \
+            ../afl-fuzz \
+              -i inputs \
+              -o outputs \
+              -M out_m0 \
+              -p explore \
+              -P explore \
+              -m none \
+              -- ./afl_dnp3_outstation @@ \
+            2>&1 | tee "logs/afl-fuzz-live-seg-${{ inputs.run_segment }}.log"
+          rc=${PIPESTATUS[0]}
+          set -e
+
+          echo "afl++/timeout exit code: $rc"
+
+          if [ -f outputs/out_m0/plot_data ]; then
+            echo "===== plot_data tail ====="
+            tail -n 20 outputs/out_m0/plot_data | tee "logs/plot_data_tail-seg-${{ inputs.run_segment }}.log"
+          fi
+
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
+            exit "$rc"
+          fi
+
+      - name: Print final fuzzer_stats
+        if: always()
+        shell: bash
+        run: |
+          cd fuzz_git
+          echo "===== final fuzzer_stats ====="
+          if [ -f outputs/out_m0/fuzzer_stats ]; then
+            cat outputs/out_m0/fuzzer_stats
+          else
+            echo "outputs/out_m0/fuzzer_stats not found"
+          fi
+
+      - name: Alert by email when crashes found
+        continue-on-error: true
+        if: always()
+        shell: bash
+        env:
+          WORKFLOW_NAME: ${{ github.workflow }}
+          RUN_NO: ${{ github.run_number }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+        run: |
+          cd fuzz_git
+
+          if [ ! -f outputs/out_m0/fuzzer_stats ]; then
+            echo "outputs/out_m0/fuzzer_stats not found, skip email alert"
+            exit 0
+          fi
+
+          unique_crashes="$(awk -F': *' '$1=="unique_crashes"{print $2}' outputs/out_m0/fuzzer_stats | tail -n1)"
+          total_crashes="$(awk -F': *' '$1=="total_crashes"{print $2}' outputs/out_m0/fuzzer_stats | tail -n1)"
+
+          unique_crashes="${unique_crashes:-0}"
+          total_crashes="${total_crashes:-0}"
+
+          echo "unique_crashes=${unique_crashes}"
+          echo "total_crashes=${total_crashes}"
+
+          if [ "$unique_crashes" -eq 0 ] && [ "$total_crashes" -eq 0 ]; then
+            echo "No crashes found, no email sent"
+            exit 0
+          fi
+
+          export UNIQUE_CRASHES="$unique_crashes"
+          export TOTAL_CRASHES="$total_crashes"
+
+          python3 - <<'PY'
+          import os
+          import smtplib
+          from email.mime.text import MIMEText
+
+          workflow = os.environ["WORKFLOW_NAME"]
+          run_no = os.environ["RUN_NO"]
+          unique_crashes = os.environ["UNIQUE_CRASHES"]
+          total_crashes = os.environ["TOTAL_CRASHES"]
+
+          smtp_host = os.environ["SMTP_HOST"]
+          smtp_port = int(os.environ["SMTP_PORT"])
+          smtp_user = os.environ["SMTP_USER"]
+          smtp_pass = os.environ["SMTP_PASS"]
+          alert_email = os.environ["ALERT_EMAIL"]
+
+          subject = f"[AFL Alert] {workflow} #{run_no} detected crashes"
+          body = f"""AFL crash detected.
+
+          Workflow: {workflow}
+          Sequence: #{run_no}
+          unique_crashes: {unique_crashes}
+          total_crashes: {total_crashes}
+          """
+
+          msg = MIMEText(body, _charset="utf-8")
+          msg["Subject"] = subject
+          msg["From"] = smtp_user
+          msg["To"] = alert_email
+
+          with smtplib.SMTP(smtp_host, smtp_port) as server:
+              server.starttls()
+              server.login(smtp_user, smtp_pass)
+              server.sendmail(smtp_user, [alert_email], msg.as_string())
+
+          print("Crash alert email sent")
+          PY
+
+      - name: Pack fuzzing results
+        if: always()
+        shell: bash
+        run: |
+          cd fuzz_git
+          if [ -d outputs ]; then
+            tar -czf dnp3-findings.tar.gz outputs
+          else
+            echo "outputs not found, skip packing"
+          fi
+
+      - name: Upload fuzzing log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dnp3-log-seg-${{ inputs.run_segment }}
+          path: dnp3/logs/
+          if-no-files-found: warn
+
+      - name: Upload fuzzing results archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dnp3-findings-seg-${{ inputs.run_segment }}
+          path: dnp3/dnp3-findings.tar.gz
+          if-no-files-found: warn
+
+      - name: Trigger next fuzzing segment
+        if: ${{ success() && fromJSON(inputs.run_segment) < fromJSON(inputs.max_segments) }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          next_segment=$(( ${{ inputs.run_segment }} + 1 ))
+          current_artifact="dnp3-findings-seg-${{ inputs.run_segment }}"
+
+          echo "Triggering segment ${next_segment}/${{ inputs.max_segments }} based on current AFL++ outputs"
+
+          curl -fsSL \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dnp3_fuzzing.yml/dispatches" \
+            -d @- <<EOF
+          {
+            "ref": "main",
+            "inputs": {
+              "target_branch": "${{ inputs.target_branch }}",
+              "run_segment": "${next_segment}",
+              "max_segments": "${{ inputs.max_segments }}",
+              "resume_run_id": "${{ github.run_id }}",
+              "resume_artifact_name": "${current_artifact}"
+            }
+          }
+          EOF
