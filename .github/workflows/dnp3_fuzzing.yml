@@ -36,7 +36,7 @@ permissions:
 
 jobs:
   fuzzing:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 360
 
     steps:
@@ -45,22 +45,15 @@ jobs:
         with:
           ref: ${{ inputs.target_branch }}
 
-      - name: Install AFL++ runtime dependencies
+      - name: Install runtime libraries for target and AFL++
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            python3 \
+            python3.12 \
+            libpython3.12t64 \
             libstdc++6 \
             libgcc-s1
-
-      - name: Check AFL++ and target runtime libraries
-        shell: bash
-        run: |
-          chmod +x ./afl-fuzz
-          echo "==== ldd ./afl-fuzz ===="
-          ldd ../afl-fuzz || true
-          echo "==== ldd fuzz_git/afl_dnp3_outstation ===="
-          ldd fuzz_git/afl_dnp3_outstation || true
+          sudo ldconfig
 
       - name: Restore AFL++ state from previous segment
         if: ${{ inputs.resume_run_id != '' && inputs.resume_artifact_name != '' }}
@@ -68,7 +61,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          cd fuzz_git
+          cd dnp3
           rm -rf outputs
           mkdir -p /tmp/afl-resume
           gh run download "${{ inputs.resume_run_id }}" \
@@ -78,6 +71,16 @@ jobs:
           test -d outputs/out_m0/queue
           echo "Resumed AFL++ output from run ${{ inputs.resume_run_id }} / artifact ${{ inputs.resume_artifact_name }}"
 
+      - name: Check runtime libraries
+        shell: bash
+        run: |
+          cd dnp3
+          chmod +x ./afl_dnp3_outstation ../afl-fuzz
+          echo "==== ldd afl-fuzz ===="
+          ldd ../afl-fuzz || true
+          echo "==== ldd afl_dnp3_outstation ===="
+          ldd ./afl_dnp3_outstation || true
+
       - name: Prepare runner for crash detection
         shell: bash
         run: |
@@ -85,16 +88,25 @@ jobs:
           sudo sysctl -w kernel.core_pattern=core
           echo "After:  $(cat /proc/sys/kernel/core_pattern)"
 
-      - name: Run AFL++ fuzzing for limited time
+      - name: Run AFL++ fuzzing on multiple cores
         shell: bash
         run: |
-          cd fuzz_git
+          cd dnp3
           mkdir -p logs
-          chmod +x ./afl_dnp3_outstation
-          chmod +x ../afl-fuzz
+          chmod +x ./afl_dnp3_outstation ../afl-fuzz
           export AFL_NO_UI=1
 
+          workers="$(nproc)"
+          if [ "$workers" -lt 2 ]; then
+            workers=2
+          fi
+
+          echo "Launching $workers AFL++ workers on the same VM"
+
+          pids=()
+
           set +e
+
           timeout 21300 env \
             AFL_AUTORESUME=1 \
             AFL_IMPORT_FIRST=1 \
@@ -107,27 +119,51 @@ jobs:
               -P explore \
               -m none \
               -- ./afl_dnp3_outstation @@ \
-            2>&1 | tee "logs/afl-fuzz-live-seg-${{ inputs.run_segment }}.log"
-          rc=${PIPESTATUS[0]}
+            > "logs/afl-fuzz-out_m0-seg-${{ inputs.run_segment }}.log" 2>&1 &
+          pids+=($!)
+
+          for i in $(seq 1 $((workers - 1))); do
+            timeout 21300 env \
+              AFL_AUTORESUME=1 \
+              AFL_IMPORT_FIRST=1 \
+              AFL_TESTCACHE_SIZE=200 \
+              ../afl-fuzz \
+                -i inputs \
+                -o outputs \
+                -S "out_s${i}" \
+                -p explore \
+                -P explore \
+                -m none \
+                -- ./afl_dnp3_outstation @@ \
+              > "logs/afl-fuzz-out_s${i}-seg-${{ inputs.run_segment }}.log" 2>&1 &
+            pids+=($!)
+          done
+
+          rc=0
+          for pid in "${pids[@]}"; do
+            wait "$pid"
+            one_rc=$?
+            echo "worker pid=$pid exit code=$one_rc"
+            if [ "$one_rc" -ne 0 ] && [ "$one_rc" -ne 124 ]; then
+              rc="$one_rc"
+            fi
+          done
+
           set -e
 
-          echo "afl++/timeout exit code: $rc"
-
           if [ -f outputs/out_m0/plot_data ]; then
-            echo "===== plot_data tail ====="
+            echo "===== master plot_data tail ====="
             tail -n 20 outputs/out_m0/plot_data | tee "logs/plot_data_tail-seg-${{ inputs.run_segment }}.log"
           fi
 
-          if [ "$rc" -ne 0 ] && [ "$rc" -ne 124 ]; then
-            exit "$rc"
-          fi
+          exit "$rc"
 
       - name: Print final fuzzer_stats
         if: always()
         shell: bash
         run: |
-          cd fuzz_git
-          echo "===== final fuzzer_stats ====="
+          cd dnp3
+          echo "===== final fuzzer_stats (master) ====="
           if [ -f outputs/out_m0/fuzzer_stats ]; then
             cat outputs/out_m0/fuzzer_stats
           else
@@ -147,7 +183,7 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
         run: |
-          cd fuzz_git
+          cd dnp3
 
           if [ ! -f outputs/out_m0/fuzzer_stats ]; then
             echo "outputs/out_m0/fuzzer_stats not found, skip email alert"
@@ -213,7 +249,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          cd fuzz_git
+          cd dnp3
           if [ -d outputs ]; then
             tar -czf dnp3-findings.tar.gz outputs
           else
@@ -245,8 +281,6 @@ jobs:
           next_segment=$(( ${{ inputs.run_segment }} + 1 ))
           current_artifact="dnp3-findings-seg-${{ inputs.run_segment }}"
 
-          echo "Triggering segment ${next_segment}/${{ inputs.max_segments }} based on current AFL++ outputs"
-
           curl -fsSL \
             -X POST \
             -H "Accept: application/vnd.github+json" \
@@ -255,7 +289,7 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/dnp3_fuzzing.yml/dispatches" \
             -d @- <<EOF
           {
-            "ref": "main",
+            "ref": "dev",
             "inputs": {
               "target_branch": "${{ inputs.target_branch }}",
               "run_segment": "${next_segment}",
