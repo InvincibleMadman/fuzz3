@@ -21,7 +21,7 @@ on:
       max_segments:
         description: 'Maximum number of chained fuzzing segments'
         required: true
-        default: '8'
+        default: '16'
         type: string
 
       resume_run_id:
@@ -170,7 +170,7 @@ jobs:
                 -o outputs \
                 -S "out_s${i}" \
                 -p explore \
-                -P explore \
+                -P 300 \
                 -m none \
                 -- "${TARGET_BIN}" @@ \
               > "logs/afl-fuzz-out_s${i}-seg-${{ inputs.run_segment }}.log" 2>&1 &
