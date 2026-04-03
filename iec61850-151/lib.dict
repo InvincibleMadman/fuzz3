@@ -1,0 +1,344 @@
+# =========================
+# RFC1006 / TPKT / COTP
+# =========================
+
+tpkt_v3="\x03\x00"
+tpkt_7="\x03\x00\x00\x07"
+tpkt_16="\x03\x00\x00\x10"
+tpkt_22="\x03\x00\x00\x16"
+tpkt_31="\x03\x00\x00\x1f"
+tpkt_35="\x03\x00\x00\x23"
+tpkt_39="\x03\x00\x00\x27"
+tpkt_47="\x03\x00\x00\x2f"
+tpkt_63="\x03\x00\x00\x3f"
+tpkt_127="\x03\x00\x00\x7f"
+
+cotp_cr="\x11\xe0\x00\x00\x00\x01\x00\xc1\x02\x00\x00\xc2\x02\x00\x01"
+cotp_cc="\x0e\xd0\x00\x00\x00\x01\x00\xc1\x02\x00\x00\xc2\x02\x00\x01"
+cotp_dt="\x02\xf0\x80"
+cotp_dr="\x06\x80"
+cotp_er="\x02\x70\x00"
+
+full_cr="\x03\x00\x00\x16\x11\xe0\x00\x00\x00\x01\x00\xc1\x02\x00\x00\xc2\x02\x00\x01"
+full_dt="\x03\x00\x00\x07\x02\xf0\x80"
+
+tsap_src0="\xc1\x02\x00\x00"
+tsap_dst1="\xc2\x02\x00\x01"
+tsap_dst0="\xc2\x02\x00\x00"
+
+# =========================
+# BER / ASN.1 base atoms
+# =========================
+
+ber_bool_false="\x01\x01\x00"
+ber_bool_true="\x01\x01\xff"
+
+ber_i0="\x02\x01\x00"
+ber_i1="\x02\x01\x01"
+ber_i2="\x02\x01\x02"
+ber_i3="\x02\x01\x03"
+ber_i4="\x02\x01\x04"
+ber_i7f="\x02\x01\x7f"
+ber_i0100="\x02\x02\x01\x00"
+ber_iffff="\x02\x02\xff\xff"
+
+ber_octets_empty="\x04\x00"
+ber_null="\x05\x00"
+ber_oid="\x06"
+ber_seq_empty="\x30\x00"
+ber_set_empty="\x31\x00"
+
+len_0="\x00"
+len_1="\x01"
+len_2="\x02"
+len_4="\x04"
+len_8="\x08"
+len_16="\x10"
+len_127="\x7f"
+len_81_80="\x81\x80"
+len_81_ff="\x81\xff"
+len_82_0100="\x82\x01\x00"
+len_82_0200="\x82\x02\x00"
+len_82_ffff="\x82\xff\xff"
+
+visible_empty="\x1a\x00"
+bitstr_empty="\x03\x01\x00"
+
+mms_oid_full="\x06\x05\x28\xca\x22\x02\x03"
+mms_oid_raw="\x28\xca\x22\x02\x03"
+
+# =========================
+# ACSE / Presentation / MMS PDU tags
+# =========================
+
+aarq="\x60"
+aare="\x61"
+rlrq="\x62"
+rlre="\x63"
+abrt="\x64"
+
+mms_confirmed_req="\xa0"
+mms_confirmed_rsp="\xa1"
+mms_confirmed_err="\xa2"
+mms_unconfirmed="\xa3"
+mms_reject="\xa4"
+
+mms_initiate_req="\xa8"
+mms_initiate_rsp="\xa9"
+
+ctx_80="\x80"
+ctx_81="\x81"
+ctx_82="\x82"
+ctx_83="\x83"
+ctx_84="\x84"
+ctx_85="\x85"
+ctx_a0="\xa0"
+ctx_a1="\xa1"
+ctx_a2="\xa2"
+ctx_a3="\xa3"
+ctx_a4="\xa4"
+ctx_a5="\xa5"
+ctx_a6="\xa6"
+ctx_a8="\xa8"
+ctx_a9="\xa9"
+ctx_ab="\xab"
+ctx_ac="\xac"
+ctx_ad="\xad"
+
+# =========================
+# MMS confirmed-service atoms
+# (fuzzing atoms, useful with valid seeds)
+# =========================
+
+svc_status="\xa0"
+svc_getNameList="\xa1"
+svc_identify_tag="\x82"
+svc_identify_null="\x82\x00"
+svc_read="\xa4"
+svc_write="\xa5"
+svc_getVariableAccessAttributes="\xa6"
+svc_defineNamedVariableList="\xab"
+svc_getNamedVariableListAttributes="\xac"
+svc_deleteNamedVariableList="\xad"
+
+invoke_1="\x02\x01\x01"
+invoke_2="\x02\x01\x02"
+invoke_3="\x02\x01\x03"
+invoke_255="\x02\x01\xff"
+
+# =========================
+# Common text atoms
+# =========================
+
+slash="/"
+dot="."
+dollar="$"
+lbrack="["
+rbrack="]"
+
+fc_ST="ST"
+fc_MX="MX"
+fc_DC="DC"
+fc_CF="CF"
+fc_CO="CO"
+fc_RP="RP"
+fc_BR="BR"
+
+mms_ST="$ST$"
+mms_MX="$MX$"
+mms_DC="$DC$"
+mms_CF="$CF$"
+mms_CO="$CO$"
+mms_RP="$RP$"
+mms_BR="$BR$"
+
+# =========================
+# Logical device / node / object names
+# =========================
+
+ld_simple="simpleIOGenericIO"
+ld_generic="GenericIO"
+ln0="LLN0"
+ln_gio="GGIO1"
+
+do_spcso1="SPCSO1"
+do_spcso2="SPCSO2"
+do_spcso3="SPCSO3"
+do_spcso4="SPCSO4"
+
+do_anin1="AnIn1"
+do_anin2="AnIn2"
+do_anin3="AnIn3"
+do_anin4="AnIn4"
+
+do_namplt="NamPlt"
+
+da_stVal="stVal"
+da_ctlVal="ctlVal"
+da_t="t"
+da_q="q"
+da_mag="mag"
+da_f="f"
+da_vendor="vendor"
+
+# =========================
+# Control-related names
+# =========================
+
+ctl_Oper="Oper"
+ctl_SBO="SBO"
+ctl_SBOw="SBOw"
+ctl_Cancel="Cancel"
+ctl_ctlModel="ctlModel"
+ctl_origin="origin"
+ctl_orCat="orCat"
+ctl_orIdent="orIdent"
+ctl_ctlNum="ctlNum"
+ctl_Test="Test"
+ctl_Check="Check"
+ctl_T="T"
+
+# =========================
+# Report / dataset names
+# =========================
+
+rpt_Events="Events"
+rpt_EventsRCB="EventsRCB"
+rpt_RptEna="RptEna"
+rpt_RptID="RptID"
+rpt_DatSet="DatSet"
+rpt_GI="GI"
+rpt_OptFlds="OptFlds"
+rpt_BufTm="BufTm"
+rpt_TrgOps="TrgOps"
+rpt_IntgPd="IntgPd"
+rpt_SqNum="SqNum"
+rpt_ConfRev="ConfRev"
+rpt_EntryID="EntryID"
+rpt_TimeOfEntry="TimeOfEntry"
+rpt_Owner="Owner"
+rpt_Resv="Resv"
+rpt_ResvTms="ResvTms"
+
+ds_new="newDataSet"
+
+# =========================
+# IEC 61850-style object references
+# =========================
+
+ref_vendor="simpleIOGenericIO/GGIO1.NamPlt.vendor"
+
+ref_spcso1_st="simpleIOGenericIO/GGIO1.SPCSO1.stVal[ST]"
+ref_spcso1_t="simpleIOGenericIO/GGIO1.SPCSO1.t[ST]"
+ref_spcso2_st="simpleIOGenericIO/GGIO1.SPCSO2.stVal[ST]"
+ref_spcso2_t="simpleIOGenericIO/GGIO1.SPCSO2.t[ST]"
+ref_spcso3_st="simpleIOGenericIO/GGIO1.SPCSO3.stVal[ST]"
+ref_spcso3_t="simpleIOGenericIO/GGIO1.SPCSO3.t[ST]"
+ref_spcso4_st="simpleIOGenericIO/GGIO1.SPCSO4.stVal[ST]"
+ref_spcso4_t="simpleIOGenericIO/GGIO1.SPCSO4.t[ST]"
+
+ref_spcso1_ctl="simpleIOGenericIO/GGIO1.SPCSO1.ctlVal[CO]"
+ref_spcso2_ctl="simpleIOGenericIO/GGIO1.SPCSO2.ctlVal[CO]"
+ref_spcso3_ctl="simpleIOGenericIO/GGIO1.SPCSO3.ctlVal[CO]"
+ref_spcso4_ctl="simpleIOGenericIO/GGIO1.SPCSO4.ctlVal[CO]"
+
+ref_spcso1_oper="simpleIOGenericIO/GGIO1.SPCSO1.Oper.ctlVal[CO]"
+ref_spcso2_oper="simpleIOGenericIO/GGIO1.SPCSO2.Oper.ctlVal[CO]"
+ref_spcso3_oper="simpleIOGenericIO/GGIO1.SPCSO3.Oper.ctlVal[CO]"
+ref_spcso4_oper="simpleIOGenericIO/GGIO1.SPCSO4.Oper.ctlVal[CO]"
+
+ref_anin1="simpleIOGenericIO/GGIO1.AnIn1.mag.f"
+ref_anin2="simpleIOGenericIO/GGIO1.AnIn2.mag.f"
+ref_anin3="simpleIOGenericIO/GGIO1.AnIn3.mag.f"
+ref_anin4="simpleIOGenericIO/GGIO1.AnIn4.mag.f"
+
+ref_anin1_mx="simpleIOGenericIO/GGIO1.AnIn1.mag.f[MX]"
+ref_anin2_mx="simpleIOGenericIO/GGIO1.AnIn2.mag.f[MX]"
+ref_anin3_mx="simpleIOGenericIO/GGIO1.AnIn3.mag.f[MX]"
+ref_anin4_mx="simpleIOGenericIO/GGIO1.AnIn4.mag.f[MX]"
+
+ref_dataset="simpleIOGenericIO/LLN0.newDataSet"
+ref_rp="simpleIOGenericIO/LLN0.RP.EventsRCB"
+ref_br="simpleIOGenericIO/LLN0.BR.EventsRCB"
+
+# =========================
+# MMS internal-style item names
+# =========================
+
+mms_vendor_dc="GGIO1$DC$NamPlt$vendor"
+
+mms_spcso1_st="GGIO1$ST$SPCSO1$stVal"
+mms_spcso1_t="GGIO1$ST$SPCSO1$t"
+mms_spcso2_st="GGIO1$ST$SPCSO2$stVal"
+mms_spcso2_t="GGIO1$ST$SPCSO2$t"
+mms_spcso3_st="GGIO1$ST$SPCSO3$stVal"
+mms_spcso3_t="GGIO1$ST$SPCSO3$t"
+mms_spcso4_st="GGIO1$ST$SPCSO4$stVal"
+mms_spcso4_t="GGIO1$ST$SPCSO4$t"
+
+mms_spcso1_ctl="GGIO1$CO$SPCSO1$ctlVal"
+mms_spcso2_ctl="GGIO1$CO$SPCSO2$ctlVal"
+mms_spcso3_ctl="GGIO1$CO$SPCSO3$ctlVal"
+mms_spcso4_ctl="GGIO1$CO$SPCSO4$ctlVal"
+
+mms_spcso1_oper="GGIO1$CO$SPCSO1$Oper$ctlVal"
+mms_spcso2_oper="GGIO1$CO$SPCSO2$Oper$ctlVal"
+mms_spcso3_oper="GGIO1$CO$SPCSO3$Oper$ctlVal"
+mms_spcso4_oper="GGIO1$CO$SPCSO4$Oper$ctlVal"
+
+mms_anin1_mag="GGIO1$MX$AnIn1$mag$f"
+mms_anin2_mag="GGIO1$MX$AnIn2$mag$f"
+mms_anin3_mag="GGIO1$MX$AnIn3$mag$f"
+mms_anin4_mag="GGIO1$MX$AnIn4$mag$f"
+
+mms_anin1_t="GGIO1$MX$AnIn1$t"
+mms_anin2_t="GGIO1$MX$AnIn2$t"
+mms_anin3_t="GGIO1$MX$AnIn3$t"
+mms_anin4_t="GGIO1$MX$AnIn4$t"
+
+mms_rp="LLN0$RP$EventsRCB"
+mms_br="LLN0$BR$EventsRCB"
+mms_dataset="LLN0$newDataSet"
+
+mms_rptEna="RptEna"
+mms_rptID="RptID"
+mms_datSet="DatSet"
+mms_gi="GI"
+mms_optFlds="OptFlds"
+mms_bufTm="BufTm"
+mms_trgOps="TrgOps"
+mms_intgPd="IntgPd"
+mms_confRev="ConfRev"
+mms_owner="Owner"
+
+# =========================
+# Useful small text atoms
+# =========================
+
+txt_MX="MX"
+txt_ST="ST"
+txt_CO="CO"
+txt_DC="DC"
+txt_CF="CF"
+txt_RP="RP"
+txt_BR="BR"
+
+txt_GGIO1="GGIO1"
+txt_LLN0="LLN0"
+txt_SPCSO1="SPCSO1"
+txt_SPCSO2="SPCSO2"
+txt_SPCSO3="SPCSO3"
+txt_SPCSO4="SPCSO4"
+txt_AnIn1="AnIn1"
+txt_AnIn2="AnIn2"
+txt_AnIn3="AnIn3"
+txt_AnIn4="AnIn4"
+txt_mag="mag"
+txt_f="f"
+txt_t="t"
+txt_stVal="stVal"
+txt_ctlVal="ctlVal"
+txt_vendor="vendor"
+txt_NamPlt="NamPlt"
+txt_EventsRCB="EventsRCB"
+txt_newDataSet="newDataSet"
