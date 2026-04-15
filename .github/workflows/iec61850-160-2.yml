@@ -49,7 +49,7 @@ env:
   TARGET_BIN: ./server_example_basic_io
   CMPLOG_BIN: ./server_example_basic_io.cmplog
   ASAN_BIN: ./server_example_basic_io_asan
-  DICT_NAME: iec61850.dict
+  DICT_NAME: lib.dict
   AFL_FUZZ_PATH: ../afl-fuzz
   OUTPUT_DIR: outputs
   LOG_DIR: logs
