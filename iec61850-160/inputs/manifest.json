@@ -1,0 +1,218 @@
+[
+  {
+    "file": "00_cr_only.bin",
+    "size": 22,
+    "purpose": "仅 COTP CR，覆盖 listen/accept/COTP 入口。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a"
+  },
+  {
+    "file": "01_cr_initiate.bin",
+    "size": 233,
+    "purpose": "CR + MMS Initiate，进入 ACSE/Presentation/MMS 关联路径。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "02_cr_initiate_identify.bin",
+    "size": 260,
+    "purpose": "关联后立刻 Identify。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "03_assoc_identify_vmd_namelist.bin",
+    "size": 296,
+    "purpose": "Identify + GetNameList(vmdSpecific)。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "04_assoc_domain_namelist.bin",
+    "size": 313,
+    "purpose": "GetNameList(domainSpecific=simpleIOGenericIO)。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "05_assoc_domain_namelist_continue.bin",
+    "size": 335,
+    "purpose": "带 continueAfter 的域内枚举。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "06_assoc_read_vendor.bin",
+    "size": 343,
+    "purpose": "读 GGIO1$DC$NamPlt$vendor。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "07_assoc_read_analogs.bin",
+    "size": 489,
+    "purpose": "批量读 4 路模拟量。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "08_assoc_read_statuses.bin",
+    "size": 676,
+    "purpose": "批量读 4 路状态量 stVal/t。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "09_assoc_getvaa_vendor.bin",
+    "size": 334,
+    "purpose": "GetVariableAccessAttributes(vendor)。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "10_assoc_getvaa_anin1.bin",
+    "size": 332,
+    "purpose": "GetVariableAccessAttributes(AnIn1.mag.f)。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "11_assoc_write_vendor.bin",
+    "size": 350,
+    "purpose": "写 vendor VisibleString。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "12_assoc_write_GGIO1_CO_SPCSO1_ctlVal.bin",
+    "size": 343,
+    "purpose": "写 GGIO1$CO$SPCSO1$ctlVal BOOLEAN。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "13_assoc_write_GGIO1_CO_SPCSO2_ctlVal.bin",
+    "size": 343,
+    "purpose": "写 GGIO1$CO$SPCSO2$ctlVal BOOLEAN。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "14_assoc_write_GGIO1_CO_SPCSO3_ctlVal.bin",
+    "size": 343,
+    "purpose": "写 GGIO1$CO$SPCSO3$ctlVal BOOLEAN。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "15_assoc_write_GGIO1_CO_SPCSO4_ctlVal.bin",
+    "size": 343,
+    "purpose": "写 GGIO1$CO$SPCSO4$ctlVal BOOLEAN。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "16_assoc_write_GGIO1_CO_SPCSO1_Oper_ctlVal.bin",
+    "size": 348,
+    "purpose": "写 GGIO1$CO$SPCSO1$Oper$ctlVal BOOLEAN。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "17_assoc_write_GGIO1_CO_SPCSO2_Oper_ctlVal.bin",
+    "size": 348,
+    "purpose": "写 GGIO1$CO$SPCSO2$Oper$ctlVal BOOLEAN。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "18_assoc_write_GGIO1_CO_SPCSO3_Oper_ctlVal.bin",
+    "size": 348,
+    "purpose": "写 GGIO1$CO$SPCSO3$Oper$ctlVal BOOLEAN。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "19_assoc_write_GGIO1_CO_SPCSO4_Oper_ctlVal.bin",
+    "size": 348,
+    "purpose": "写 GGIO1$CO$SPCSO4$Oper$ctlVal BOOLEAN。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "20_assoc_read_events_dataset.bin",
+    "size": 328,
+    "purpose": "按 variableListName 读 LLN0$Events。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "21_assoc_define_newdataset.bin",
+    "size": 517,
+    "purpose": "定义 LLN0$newDataSet。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "22_assoc_get_events_nvl_attr.bin",
+    "size": 321,
+    "purpose": "读取 LLN0$Events 属性。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "23_assoc_newdataset_roundtrip.bin",
+    "size": 726,
+    "purpose": "create -> getattr -> read -> delete 的动态数据集往返。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "27_assoc_getvaa_LLN0_RP_EventsRCB.bin",
+    "size": 329,
+    "purpose": "GetVariableAccessAttributes(LLN0$RP$EventsRCB)。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "28_assoc_read_LLN0_RP_EventsRCB.bin",
+    "size": 338,
+    "purpose": "读取 LLN0$RP$EventsRCB。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "29_assoc_getvaa_LLN0_BR_EventsRCB.bin",
+    "size": 329,
+    "purpose": "GetVariableAccessAttributes(LLN0$BR$EventsRCB)。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "30_assoc_read_LLN0_BR_EventsRCB.bin",
+    "size": 338,
+    "purpose": "读取 LLN0$BR$EventsRCB。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "31_assoc_read_bad_object.bin",
+    "size": 342,
+    "purpose": "读不存在对象，覆盖错误返回分支。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "32_assoc_mixed_deep.bin",
+    "size": 1559,
+    "purpose": "单连接混合会话：Identify + NameList + Read + Write + NVL。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "41_malformed_short_tpkt.bin",
+    "size": 7,
+    "purpose": "极短 TPKT/COTP。",
+    "head_hex": "0300000702f080"
+  },
+  {
+    "file": "42_malformed_overlong_tpkt_len.bin",
+    "size": 15,
+    "purpose": "TPKT 长度字段异常过大。",
+    "head_hex": "0300ffff02f0800000000000000000"
+  },
+  {
+    "file": "43_malformed_bad_ber_length.bin",
+    "size": 292,
+    "purpose": "BER 长度字段不一致。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "44_malformed_deep_sequence.bin",
+    "size": 365,
+    "purpose": "深层嵌套 Sequence。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "45_malformed_unknown_service.bin",
+    "size": 290,
+    "purpose": "未知 confirmed service tag。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  },
+  {
+    "file": "46_malformed_empty_confirmed.bin",
+    "size": 282,
+    "purpose": "空 confirmed PDU。",
+    "head_hex": "0300001611e00000000100c1020000c2020001c0010a030000d302f0800dca0506130100160102140200023302000134020001c1b43181b1a003800101a281a9"
+  }
+]
